@@ -132,8 +132,3 @@ python scripts/evaluate_public_food_final.py \
 | GEPA stress test | `run_cross_model_gepa_calibration.py` |
 | Public human-choice validation | `prepare_public_food_benchmark.py`, `run_public_food_search.py`, `evaluate_public_food_final.py` |
 
-## Deliberately omitted
-
-Exploratory notebooks, manuscript/paper-building code, internal handoff notes, historical prompt-search variants, generated figures, cached model outputs, and experiment debris are excluded.
-
-The expensive LLM weights and public respondent dataset are external dependencies and are not bundled.
