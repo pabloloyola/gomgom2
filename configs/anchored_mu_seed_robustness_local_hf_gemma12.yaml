@@ -1,0 +1,60 @@
+experiment:
+  name: anchored_mu_seed_robustness_local_hf_gemma12_preheldout
+  reference_seed: 1729
+  additional_seeds:
+    - 2027
+    - 2718
+    - 3141
+  context_variants_per_intervention: 5
+  max_accepted_iterations: 4
+  coordinate_step: 0.5
+  selection_rule: greedy_best_single_coordinate_neighbor
+  accept_only_strict_improvement: true
+
+reference_result:
+  initial_objective: 0.08078619119354195
+  final_objective: 0.06418735140401396
+  improvement_fraction: 0.2054662999244715
+  accepted_iterations: 1
+  selected_coordinate:
+    persona_id: quality
+    feature: brand
+    signed_step: -0.5
+
+backend:
+  kind: huggingface_local
+  model: google/gemma-3-12b-it
+  dtype: bfloat16
+  device_map: auto
+  max_new_tokens: 192
+  do_sample: false
+  temperature: null
+  cache_dir: .cache/eipg/hf_local_gemma12
+  trust_remote_code: false
+
+mu:
+  features:
+    - price
+    - quality
+    - sustain
+    - novelty
+    - brand
+  lower_bound: -1.5
+  upper_bound: 1.5
+  baseline: exact_original_persona_prompts
+  renderer: anchored_relative_adjustments_v1
+  step: 0.5
+
+protocol:
+  same_mechanism_as_frozen_anchored_mu: true
+  only_context_seed_varies: true
+  heldout_constructed: false
+  heldout_metrics_visible_for_selection: false
+  calibration_only_before_holdout_freeze: true
+  zero_mu_equals_original_prompt_exactly: true
+
+logging:
+  save_seed_histories: true
+  save_seed_summaries: true
+  save_aggregate_summary: true
+  save_progress_jsonl: true

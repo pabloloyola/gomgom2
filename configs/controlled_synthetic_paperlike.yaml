@@ -1,0 +1,105 @@
+# More realistic starter config for local controlled-synthetic experiments.
+# This is still not a final paper-results config, but it is large enough to inspect
+# more stable numbers than the smoke config.
+
+run:
+  name: controlled_synthetic_paperlike
+  seed: 123
+  output_dir: outputs/controlled_synthetic_paperlike
+  timestamped: true
+
+pipeline:
+  # For dataset inspection, run with --stage datasets or set this to datasets.
+  stop_after: all
+
+benchmark:
+  name: controlled_synthetic
+  n_anchor_contexts: 120
+  n_sim_contexts: 300
+  n_calib_intervention_contexts: 120
+  n_cf_contexts: 120
+  n_alternatives: 5
+  price_intervention_multiplier: 1.20
+  intervened_alternative_id: 0
+  attributes:
+    - price
+    - quality
+    - sustain
+    - novelty
+    - brand
+
+persona_generator:
+  k_components: 3
+  latent_dim: 5
+  covariance: diagonal_fixed
+  within_component_std: 0.30
+  init: paper_smoke
+  features:
+    - price
+    - quality
+    - sustain
+    - novelty
+    - brand
+  segment_labels:
+    - budget_sensitive
+    - quality_brand_oriented
+    - sustainability_novelty_oriented
+
+simulation:
+  simulator: synthetic_random_utility
+  n_personas: 160
+  n_human_personas: 320
+  n_obs: 1200
+  n_anchor_obs: 600
+  n_calib_obs: 600
+  n_cf_obs: 600
+  choice_temperature: 1.0
+
+synthetic_truth:
+  weights: [0.45, 0.35, 0.20]
+  means:
+    - [-2.4, 0.8, 0.1, 0.0, -0.1]
+    - [-0.5, 2.0, 0.2, 0.0, 1.1]
+    - [-0.9, 0.7, 1.8, 1.3, 0.1]
+  within_component_std: 0.25
+
+inner_model:
+  model: mnl
+  l2: 1.0e-4
+  max_iter: 500
+
+calibration:
+  # Avoid literal duplicate moments under uniform diagonal weighting.
+  drop_redundant_moments: true
+  intervention_share_response: full_substitution
+  moments:
+    - item_shares
+    - group_shares
+    - chosen_attributes
+    - intervention_response
+  weights: diagonal_uniform
+
+regularization:
+  entropy_weight: 0.05
+  dispersion_weight: 0.25
+  prior_weight: 0.0
+  dispersion_mode: band
+  dispersion_min: 1.50
+  dispersion_max: 3.00
+  diversity_radius: 2.5
+
+outer_optimizer:
+  method: evolutionary_search
+  # Starter values for laptop experiments. Increase budget/population once the
+  # numbers look sane and reproducible.
+  budget: 24
+  population: 6
+  mean_mutation_scale: 0.25
+  weight_logit_mutation_scale: 0.20
+  mean_clip: 4.0
+  sigma_decay: 0.90
+  objective_metric: calibration_l2_plus_regularization
+  regularization_multiplier: 0.10
+
+local:
+  notes: "Paper-like starter config for local symbolic experiments; not final paper numbers."

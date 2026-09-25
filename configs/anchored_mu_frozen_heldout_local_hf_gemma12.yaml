@@ -1,0 +1,47 @@
+experiment:
+  name: anchored_mu_frozen_heldout_local_hf_gemma12
+  calibration_seeds:
+    - 1729
+    - 2027
+    - 2718
+    - 3141
+  heldout_seed_map:
+    "1729": 11729
+    "2027": 12027
+    "2718": 12718
+    "3141": 13141
+  context_variants_per_intervention: 5
+
+backend:
+  kind: huggingface_local
+  model: google/gemma-3-12b-it
+  dtype: bfloat16
+  device_map: auto
+  max_new_tokens: 192
+  do_sample: false
+  temperature: null
+  cache_dir: .cache/eipg/hf_local_gemma12
+  trust_remote_code: false
+
+inputs:
+  robustness_output_dir: outputs/anchored_mu_seed_robustness_local_hf_gemma12
+  reference_seed: 1729
+  reference_selected_coordinate:
+    persona_id: quality
+    feature: brand
+    signed_step: -0.5
+
+protocol:
+  frozen_after_calibration: true
+  no_prompt_selection_on_heldout: true
+  no_search_on_heldout: true
+  original_and_calibrated_evaluated_on_identical_heldout_contexts: true
+  heldout_context_seeds_predeclared: true
+  final_metrics_reporting_only: true
+  do_not_tune_after_final_test: true
+
+logging:
+  save_heldout_choices: true
+  save_heldout_moments: true
+  save_paired_results: true
+  save_manifest: true

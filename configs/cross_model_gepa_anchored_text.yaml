@@ -1,0 +1,117 @@
+# FROZEN GEPA ANCHORED-TEXT SEARCH PROTOCOL
+#
+# Defined after the adaptive-search experiment and before any GEPA heldout
+# evaluation. GEPA optimizes only textual suffixes appended to immutable authored
+# persona prompts. Behavioral calibration evidence is identical to the existing
+# anchored-persona setup.
+
+experiment:
+  name: cross_model_gepa_anchored_text_v1
+  calibration_seed: 1729
+  context_variants_per_intervention: 5
+  model_keys:
+    - gemma3_4b
+    - gemma3_12b
+    - qwen35_9b
+    - phi4_14b
+
+gepa:
+  package_version: "0.1.4"
+  seed: 1729
+  candidate_components:
+    - budget_suffix
+    - quality_suffix
+    - sustain_suffix
+  module_selector: all
+  candidate_selection_strategy: pareto
+  frontier_type: objective
+  reflection_minibatch_size: 2
+  acceptance_criterion: strict_improvement
+  use_merge: true
+  max_merge_invocations: 3
+  cache_evaluation: false
+  # GEPA 0.1.4 counts full-validation examples differently from custom
+  # minibatch metric calls. EIPG therefore tracks logical behavioral queries
+  # independently and selects only candidates discovered within each threshold.
+  budget_checkpoints:
+    - label: gepa_1320
+      logical_choice_query_budget: 1320
+    - label: gepa_3720
+      logical_choice_query_budget: 3720
+
+reflection:
+  model_key: gemma3_12b
+  same_reflection_model_for_all_simulators: true
+  max_new_tokens: 192
+  do_sample: false
+  temperature: null
+  max_suffix_chars: 900
+  preserve_authored_prefix_byte_exact: true
+  forbidden_terms:
+    - calibration
+    - residual
+    - objective
+    - target moment
+    - held-out
+    - heldout
+    - test set
+    - context id
+    - alternative 1
+    - choose alternative
+  no_numeric_target_copying: true
+  instruction: |
+    Evolve only the behavioral adjustment suffix for the named persona.
+    Keep the authored persona prefix immutable. Make concise, general preference
+    or tradeoff statements that could apply across product contexts. Never
+    mention calibration machinery, residuals, scores, targets, context IDs,
+    model names, or specific alternatives. Do not copy numeric target values.
+    Do not instruct the persona to choose a specific alternative. Preserve
+    unrelated preferences. Prefer small targeted changes over rewriting the
+    persona identity.
+
+evaluation:
+  # Five single-variant examples are used for reflection. Each requires:
+  # 4 interventions x 2 base/intervention contexts x 3 personas = 24 calls.
+  reflection_example_logical_calls: 24
+  # Candidate selection is always scored on all five variants together,
+  # exactly matching the established full calibration objective.
+  full_validation_logical_calls: 120
+  scalar_score: negative_weighted_rmse
+  objective_frontier_blocks:
+    - budget_segment
+    - quality_segment
+    - sustain_segment
+    - intervention_response
+  authored_baseline_suffixes_empty: true
+
+comparison:
+  adaptive_root: outputs/cross_model_adaptive_outer_search_v1
+  screen_confirm_root: outputs/cross_model_screen_confirm_budget_v1
+  random_subset_root: outputs/cross_model_random_subset_baseline_v1
+  full_coordinate_root: outputs/cross_model_anchored_core_v1_1
+  compare_at_1320:
+    - screen_confirm
+    - residual_linucb
+    - random_subset
+    - history_llm
+    - gepa
+  compare_at_3720:
+    - full_coordinate_search
+    - gepa
+
+fresh_heldout:
+  seeds: [61729, 62027, 62718, 63141]
+  reveal_only_after_gepa_cohort_freeze: true
+  reporting_only: true
+  no_gepa_tuning_after_reveal: true
+
+protocol:
+  same_authored_personas_across_models: true
+  same_calibration_seed_across_models: true
+  same_gepa_configuration_across_models: true
+  same_reflection_model_across_models: true
+  immutable_authored_prefix: true
+  suffix_only_search: true
+  calibration_only_before_freeze: true
+  no_heldout_information_in_reflection: true
+  no_model_specific_gepa_tuning: true

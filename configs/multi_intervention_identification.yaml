@@ -1,0 +1,62 @@
+# Development-only identification experiment.
+# CF-dev remains diagnostic and is not the untouched final paper test.
+
+experiment:
+  seed: 707
+  n_candidates: 48
+  candidate_mean_mutation_scale: 0.40
+  candidate_weight_logit_mutation_scale: 0.30
+  n_calibration_contexts_per_intervention: 120
+  n_calibration_observations_per_intervention: 600
+
+interventions:
+  - name: price
+    attribute: price
+    mode: multiply
+    value: 1.25
+    intervened_alternative_id: 0
+  - name: quality
+    attribute: quality
+    mode: add
+    value: 0.35
+    clip_min: 0.0
+    clip_max: 1.0
+    intervened_alternative_id: 0
+  - name: sustain
+    attribute: sustain
+    mode: add
+    value: 0.35
+    clip_min: 0.0
+    clip_max: 1.0
+    intervened_alternative_id: 0
+  - name: novelty
+    attribute: novelty
+    mode: add
+    value: 0.35
+    clip_min: 0.0
+    clip_max: 1.0
+    intervened_alternative_id: 0
+
+bundles:
+  price_only: [price]
+  price_quality: [price, quality]
+  price_quality_sustain: [price, quality, sustain]
+  all_four: [price, quality, sustain, novelty]
+
+# Two scoring views are reported. Equal blocks isolates information expansion;
+# substitution4 checks whether conclusions survive the currently promising
+# substitution emphasis without committing to it as the final objective.
+scoring_profiles:
+  equal:
+    level_shares: 1.0
+    level_attributes: 1.0
+    substitution: 1.0
+    intervention_attributes: 1.0
+  substitution4:
+    level_shares: 1.0
+    level_attributes: 1.0
+    substitution: 4.0
+    intervention_attributes: 1.0
+
+output:
+  dirname: multi_intervention_identification

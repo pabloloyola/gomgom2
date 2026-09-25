@@ -1,0 +1,52 @@
+# FROZEN SYMBOLIC EIPG SPECIFICATION
+#
+# This file is the preregistered development freeze for the symbolic benchmark.
+# Do not change values below in response to final-test outcomes. Any later change
+# requires a new explicitly versioned protocol and must not be called this final test.
+
+protocol:
+  name: eipg_frozen_symbolic_v1
+  frozen_after: multi_intervention_eipg_confirmation
+  development_cf_role: CF-dev used only before this freeze
+  final_cf_role: untouched evaluation only; never used for selection or tuning
+
+benchmark:
+  base_config: configs/controlled_synthetic_paperlike.yaml
+  # New benchmark realizations not used in the development experiments above.
+  benchmark_seeds: [1701, 1702, 1703, 1704, 1705]
+  # One independently generated final counterfactual realization per benchmark.
+  final_test_seeds: [91701, 91702, 91703, 91704, 91705]
+  # Search randomness is replicated within each benchmark realization.
+  search_seeds: [401, 502, 603]
+
+calibration:
+  intervention_config: configs/multi_intervention_identification.yaml
+  primary_bundle: all_four
+  primary_block_weights:
+    level_shares: 1.0
+    level_attributes: 1.0
+    substitution: 1.0
+    intervention_attributes: 1.0
+  comparator_bundle: price_only
+  comparator_block_weights:
+    level_shares: 1.0
+    level_attributes: 1.0
+    substitution: 1.0
+    intervention_attributes: 1.0
+
+search:
+  budget: 6
+  population: 4
+  mean_mutation_scale: 0.25
+  weight_logit_mutation_scale: 0.20
+  mean_clip: 4.0
+  sigma_decay: 0.90
+  regularization_multiplier: 0.05
+
+methods:
+  - initial_static
+  - price_only_equal
+  - all_four_equal
+
+output:
+  dir: outputs/frozen_symbolic_final_test

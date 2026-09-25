@@ -1,0 +1,88 @@
+# FROZEN ADAPTIVE OUTER-SEARCH PROTOCOL
+#
+# Defined after the fixed-prefix/screen-confirm/random-subset experiments and
+# before evaluating any adaptive policy on its final held-out seed set.
+#
+# Both adaptive policies search exactly the original 30 signed one-coordinate
+# neighbors around the authored population. Existing exhaustive calibration
+# artifacts are replayed as the calibration environment, so deriving the
+# policies requires no new simulator-choice generations.
+
+experiment:
+  name: cross_model_adaptive_outer_search_v1
+  source_protocol: cross_model_anchored_mu_core_v1_1
+  source_output_root: outputs/cross_model_anchored_core_v1_1
+  calibration_seed: 1729
+  model_keys:
+    - gemma3_4b
+    - gemma3_12b
+    - qwen35_9b
+    - phi4_14b
+
+budget:
+  logical_simulator_choice_queries: 1320
+  baseline_population_calls: 120
+  candidate_population_calls: 120
+  candidate_evaluations_after_baseline: 10
+  candidate_pool_size: 30
+  cache_does_not_reduce_reported_budget: true
+  proposer_calls_reported_separately: true
+
+residual_linucb:
+  # Baseline-residual prior + online linear correction from revealed rewards.
+  ridge_lambda: 1.0
+  exploration_beta: 0.15
+  residual_prior_weight: 1.0e-2
+  reward: baseline_objective_minus_candidate_objective
+  action_features:
+    - persona_one_hot
+    - feature_one_hot
+    - signed_direction
+  tie_break: lower_evaluation_index
+
+history_llm:
+  proposer_model: google/gemma-3-12b-it
+  proposer_model_loader: multimodal
+  dtype: bfloat16
+  device_map: auto
+  max_new_tokens: 192
+  do_sample: false
+  temperature: null
+  trust_remote_code: false
+  cache_dir: .cache/eipg/adaptive_policy/proposer_gemma3_12b
+  # The proposer may select only one index from the fixed remaining action list.
+  action_space: fixed_30_signed_single_coordinate_neighbors
+  sees_baseline_residuals: true
+  sees_revealed_action_objectives: true
+  sees_revealed_action_residuals: true
+  sees_heldout_information: false
+  max_parse_attempts_per_step: 2
+  invalid_proposal_fallback: next_unseen_action_from_frozen_residual_linucb_trajectory
+  tie_break: lower_evaluation_index
+
+comparison:
+  source_random_subset_root: outputs/cross_model_random_subset_baseline_v1
+  source_screen_confirm_root: outputs/cross_model_screen_confirm_budget_v1
+  strategies:
+    - fixed_prefix
+    - random_subset
+    - screen_confirm
+    - residual_linucb
+    - history_llm
+  logical_simulator_choice_queries: 1320
+  random_subset_seeds: [101, 202, 303, 404, 505]
+
+# Fourth fresh evaluation set. It must not be evaluated until BOTH adaptive
+# policies and all comparison selections are frozen.
+fresh_heldout:
+  seeds: [51729, 52027, 52718, 53141]
+  reveal_only_after_adaptive_cohort_freeze: true
+  reporting_only: true
+  no_policy_tuning_after_reveal: true
+
+protocol:
+  same_30_action_pool_across_policies: true
+  no_multistep_composed_edits: true
+  no_new_calibration_choice_generations: true
+  selection_uses_calibration_artifacts_only: true
+  all_final_policies_evaluated_on_same_fresh_contexts: true

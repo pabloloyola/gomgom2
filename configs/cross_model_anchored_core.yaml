@@ -1,0 +1,107 @@
+# FROZEN CROSS-MODEL ANCHORED-PERSONA CORE PROTOCOL
+#
+# This protocol is defined before any cross-model held-out outcomes are generated.
+# It reuses the established anchored-mu calibration mechanism but evaluates it
+# across model scale and family. A new cross-model held-out seed map is reserved
+# below and must not be constructed until the cohort calibration freeze exists.
+
+experiment:
+  name: cross_model_anchored_mu_core_v1_1
+  calibration_seeds: [1729]
+  context_variants_per_intervention: 5
+  # Fixed equal-budget comparison: baseline + all 30 signed one-coordinate neighbors.
+  max_accepted_iterations: 1
+  coordinate_step: 0.5
+  selection_rule: greedy_best_single_coordinate_neighbor
+  accept_only_strict_improvement: true
+  model_keys:
+    - gemma3_4b
+    - gemma3_12b
+    - qwen35_9b
+    - phi4_14b
+
+# New evaluation seeds frozen specifically for the cross-model study.
+# These are not the already-observed Gemma held-out seeds from the first study.
+cross_model_holdout:
+  seeds: [21729, 22027, 22718, 23141]
+  calibration_seed: 1729
+  reveal_only_after_cohort_calibration_freeze: true
+  reporting_only: true
+  no_model_specific_tuning_after_reveal: true
+
+budget:
+  # Number of complete population evaluations available to the calibration
+  # algorithm, including the exact-original baseline as evaluation 1.
+  evaluation_checkpoints: [1, 6, 11, 21, 31]
+  heldout_evaluation_checkpoints: [1, 11, 21, 31]
+  include_full_search: true
+  accounting_unit: logical_simulator_choice_query
+  cache_does_not_reduce_reported_budget: true
+
+backend_common:
+  kind: huggingface_local
+  dtype: bfloat16
+  device_map: auto
+  max_new_tokens: 192
+  do_sample: false
+  temperature: null
+  trust_remote_code: false
+
+models:
+  gemma3_4b:
+    model: google/gemma-3-4b-it
+    model_loader: multimodal
+    cache_dir: .cache/eipg/cross_model/gemma3_4b
+    family: gemma3
+    nominal_parameters_b: 4
+  gemma3_12b:
+    model: google/gemma-3-12b-it
+    model_loader: multimodal
+    cache_dir: .cache/eipg/cross_model/gemma3_12b
+    family: gemma3
+    nominal_parameters_b: 12
+  qwen35_9b:
+    model: Qwen/Qwen3.5-9B
+    model_loader: multimodal
+    # Qwen3.5 defaults to a reasoning preamble. The direct-choice simulator
+    # requires the model's documented non-thinking chat-template mode so the
+    # fixed 192-token response budget is spent on the requested JSON answer.
+    chat_template_kwargs:
+      enable_thinking: false
+    cache_dir: .cache/eipg/cross_model/qwen35_9b
+    family: qwen3.5
+    nominal_parameters_b: 9
+  phi4_14b:
+    model: microsoft/phi-4
+    model_loader: causal
+    cache_dir: .cache/eipg/cross_model/phi4_14b
+    family: phi4
+    nominal_parameters_b: 14
+
+transfer_gate:
+  fixed_pairs: true
+  repeats_per_pair: 3
+  min_parse_success: 0.98
+  min_repeat_consistency: 0.85
+  min_directional_accuracy: 0.75
+  proceed_to_calibration_only_if_passed: true
+
+mu:
+  features: [price, quality, sustain, novelty, brand]
+  lower_bound: -1.5
+  upper_bound: 1.5
+  baseline: exact_original_persona_prompts
+  renderer: anchored_relative_adjustments_v1
+  step: 0.5
+
+protocol:
+  same_personas_across_models: true
+  same_calibration_context_seed_across_models: true
+  fixed_equal_calibration_budget_across_models: true
+  four_fresh_heldout_context_replications_per_model: true
+  same_target_moments_across_models: true
+  same_coordinate_search_across_models: true
+  zero_mu_equals_original_prompt_exactly: true
+  cross_model_heldout_not_constructed_before_cohort_freeze: true
+  gate_failure_is_reported_not_repaired: true
+  no_model_specific_prompt_tuning: true

@@ -1,0 +1,135 @@
+# FROZEN PUBLIC FOOD BENCHMARK PROTOCOL v3 (pre-EIPG)
+#
+# v1 (Poland) was superseded before any EIPG run because the deposited README's
+# explicit task-level price combinations correspond to Belgium. v2 established the
+# valid Belgium reference gate. v3 makes the EIPG comparison semantics explicit:
+# anchor-only uses Task 2 outcomes only; intervention-rich additionally uses Tasks 1
+# and 3. This refinement is made before any EIPG search and without Task-4 outcomes.
+
+protocol:
+  name: nutri2cycle_bread_belgium_v3
+  status: frozen_pre_eipg
+  final_holdout_role: untouched evaluation only; never used for prompt, moment, regularization, search, or protocol tuning
+
+dataset:
+  source: https://zenodo.org/records/8338014
+  doi: 10.5281/zenodo.8338014
+  csv: N2C_Consumers WTP.csv
+  readme: N2C_Consumers_Readme.xlsx
+  respondent_id: ID
+  country_column: Country
+  country_code: 1
+  country_name: Belgium
+  product: bread
+  purchase_column: Q8.2
+  purchase_required_value: 1
+  complete_case_choice_columns: [Q9.2, Q9.3, Q9.4, Q9.5]
+  expected_complete_panels: 772
+  choice_codes:
+    organic: 1
+    conventional: 2
+    circular: 3
+    none: 4
+
+tasks:
+  1:
+    column: Q9.2
+    role: calibration_intervention
+    prices: {organic: 2.50, conventional: 1.70, circular: 1.90, none: 0.0}
+  2:
+    column: Q9.3
+    role: anchor
+    prices: {organic: 2.10, conventional: 1.60, circular: 1.70, none: 0.0}
+  3:
+    column: Q9.4
+    role: calibration_intervention
+    prices: {organic: 2.30, conventional: 1.40, circular: 1.80, none: 0.0}
+  4:
+    column: Q9.5
+    role: final_holdout
+    prices: {organic: 2.70, conventional: 1.50, circular: 1.60, none: 0.0}
+
+split:
+  anchor_tasks: [2]
+  calibration_intervention_tasks: [1, 3]
+  calibration_tasks: [1, 2, 3]
+  final_holdout_tasks: [4]
+  respondent_holdout_robustness:
+    enabled: true
+    role: appendix_only
+    fraction: 0.20
+    seed: 27017
+
+calibration:
+  anchor_only_blocks:
+    anchor_choice_shares: 1.0
+    anchor_mean_chosen_price: 1.0
+  intervention_rich_blocks:
+    anchor_choice_shares: 1.0
+    anchor_mean_chosen_price: 1.0
+    intervention_task_choice_shares: 1.0
+    intervention_share_responses: 1.0
+  block_normalization: l2_within_block
+  alternatives: [organic, conventional, circular, none]
+
+inner_model:
+  primary: homogeneous_mnl
+  utility:
+    alternative_specific_constants: [organic, conventional, circular]
+    reference_alternative: none
+    price_coefficient: generic
+  features: [price, asc_organic, asc_conventional, asc_circular]
+  l2: 1.0e-4
+  max_iter: 500
+  diagnostics:
+    alternative_specific_price_mnl: appendix_only
+    published_rpl_reference: contextual_only
+
+persona_generator:
+  components: 3
+  n_personas: 160
+  # Match the controlled benchmark's per-candidate simulation scale rather than tune on public outcomes.
+  simulation_observations: 1200
+  within_component_std: 0.30
+  features: [price_sensitivity, organic_affinity, conventional_affinity, circular_affinity, opt_out_propensity]
+  segment_labels: [budget_traditional, organic_oriented, circular_oriented]
+  # Outcome-independent initialization fixed before EIPG. Values encode generic shopper archetypes,
+  # not fitted Nutri2Cycle targets.
+  initial_weights: [0.34, 0.33, 0.33]
+  initial_means:
+    - [-1.50, 0.20, 1.00, 0.20, 0.10]
+    - [-0.90, 1.20, 0.30, 0.60, 0.10]
+    - [-0.90, 0.60, 0.30, 1.20, 0.10]
+  learnable: [mixture_weights, component_means]
+  profile_grounding: disabled_in_primary_v3
+
+regularization:
+  entropy_weight: 0.05
+  dispersion_weight: 0.25
+  prior_weight: 0.0
+  dispersion_mode: band
+  dispersion_min: 1.50
+  dispersion_max: 3.00
+
+methods:
+  - initial_static
+  - anchor_only_eipg
+  - intervention_rich_eipg
+  - direct_human_mnl_reference
+
+metrics:
+  primary: [final_choice_share_l2, final_negative_log_likelihood, final_response_moment_l2]
+  secondary: [final_choice_accuracy, calibration_candidate_rank_association, respondent_holdout_metrics]
+
+search:
+  budget: 6
+  population: 4
+  mean_mutation_scale: 0.25
+  weight_logit_mutation_scale: 0.20
+  mean_clip: 4.0
+  sigma_decay: 0.90
+  regularization_multiplier: 0.05
+  search_seeds: [401, 502, 603]
+
+output:
+  dir: outputs/public_food_benchmark_v3

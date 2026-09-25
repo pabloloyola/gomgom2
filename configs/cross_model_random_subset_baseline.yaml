@@ -1,0 +1,37 @@
+experiment:
+  name: cross_model_random_subset_budget_baseline_v1
+  source_protocol: cross_model_anchored_mu_core_v1_1
+  screen_confirm_protocol: cross_model_screen_confirm_budget_v1
+  calibration_seed: 1729
+  source_output_root: outputs/cross_model_anchored_core_v1_1
+  screen_confirm_output_root: outputs/cross_model_screen_confirm_budget_v1
+  model_keys:
+    - gemma3_4b
+    - gemma3_12b
+    - qwen35_9b
+    - phi4_14b
+
+budget:
+  logical_simulator_call_budget: 1320
+  baseline_evaluations: 1
+  random_neighbors_per_repeat: 10
+  full_calls_per_population: 120
+
+random_subset:
+  subset_seeds: [101, 202, 303, 404, 505]
+  sample_without_replacement: true
+  candidate_evaluation_indices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                                 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                                 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+  select_by: lowest_full_calibration_objective
+  tie_break: lower_evaluation_index
+
+comparison:
+  include_screen_confirm_1320: true
+  include_fixed_prefix_1320: true
+
+fresh_heldout:
+  seeds: [41729, 42027, 42718, 43141]
+  reveal_only_after_baseline_freeze: true
+  reporting_only: true
+  no_strategy_tuning_after_reveal: true

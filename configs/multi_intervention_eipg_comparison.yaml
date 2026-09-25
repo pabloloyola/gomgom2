@@ -1,0 +1,45 @@
+# Development-only outer-loop comparison.
+# CF-dev is never used in candidate selection; it is inspected after scoring to
+# test whether richer calibration interventions improve the search signal.
+
+experiment:
+  benchmark_seeds: [123, 456, 789]
+  search_seeds: [101, 202, 303]
+  base_benchmark_config: configs/controlled_synthetic_paperlike.yaml
+  intervention_config: configs/multi_intervention_identification.yaml
+  output_dir: outputs/multi_intervention_eipg_comparison
+
+search:
+  budget: 6
+  population: 4
+  mean_mutation_scale: 0.25
+  weight_logit_mutation_scale: 0.20
+  mean_clip: 4.0
+  sigma_decay: 0.90
+  regularization_multiplier: 0.05
+
+conditions:
+  price_only_equal:
+    bundle: price_only
+    block_weights:
+      level_shares: 1.0
+      level_attributes: 1.0
+      substitution: 1.0
+      intervention_attributes: 1.0
+  all_four_equal:
+    bundle: all_four
+    block_weights:
+      level_shares: 1.0
+      level_attributes: 1.0
+      substitution: 1.0
+      intervention_attributes: 1.0
+  all_four_substitution4:
+    bundle: all_four
+    block_weights:
+      level_shares: 1.0
+      level_attributes: 1.0
+      substitution: 4.0
+      intervention_attributes: 1.0
+
+# The intervention magnitudes are frozen from the identification experiment.
+# We do not tune them using the comparison results.

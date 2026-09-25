@@ -1,0 +1,37 @@
+experiment:
+  name: cross_model_screen_confirm_budget_v1
+  source_protocol: cross_model_anchored_mu_core_v1_1
+  calibration_seed: 1729
+  source_output_root: outputs/cross_model_anchored_core_v1_1
+  model_keys:
+    - gemma3_4b
+    - gemma3_12b
+    - qwen35_9b
+    - phi4_14b
+
+screen_confirm:
+  stage_a_variants: [0]
+  stage_b_top_neighbors: 5
+  stage_b_budget_calls: 1320
+  stage_c_variants: [0, 1]
+  stage_c_additional_top_neighbors: 8
+  stage_c_budget_calls: 2496
+  full_budget_calls: 3720
+  tie_break: lower_evaluation_index
+  baseline_always_confirmed: true
+
+comparison:
+  fixed_prefix_budget_labels:
+    - eval_budget_11
+    - eval_budget_21
+    - full_search
+  fixed_prefix_budget_calls:
+    eval_budget_11: 1320
+    eval_budget_21: 2520
+    full_search: 3720
+
+fresh_heldout:
+  seeds: [31729, 32027, 32718, 33141]
+  reveal_only_after_strategy_freeze: true
+  reporting_only: true
+  no_strategy_tuning_after_reveal: true

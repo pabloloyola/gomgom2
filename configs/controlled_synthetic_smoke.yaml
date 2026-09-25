@@ -1,0 +1,108 @@
+# Small, local smoke config for the controlled synthetic benchmark.
+# This is intentionally tiny: use it to verify the pipeline locally, not for paper results.
+
+run:
+  name: controlled_synthetic_smoke
+  seed: 42
+  output_dir: outputs/controlled_synthetic_smoke
+  timestamped: true
+
+pipeline:
+  # Change to personas, contexts, datasets, mnl, calibration, baselines, or outer/all.
+  stop_after: all
+
+benchmark:
+  name: controlled_synthetic
+  n_anchor_contexts: 50
+  n_sim_contexts: 100
+  n_calib_intervention_contexts: 50
+  n_cf_contexts: 50
+  n_alternatives: 4
+  # v0.3: calibration and counterfactual interventions increase the price
+  # of one alternative in selected contexts.
+  price_intervention_multiplier: 1.20
+  intervened_alternative_id: 0
+  attributes:
+    - price
+    - quality
+    - sustain
+    - novelty
+    - brand
+
+persona_generator:
+  k_components: 3
+  latent_dim: 5
+  covariance: diagonal_fixed
+  within_component_std: 0.30
+  init: paper_smoke
+  features:
+    - price
+    - quality
+    - sustain
+    - novelty
+    - brand
+  segment_labels:
+    - budget_sensitive
+    - quality_brand_oriented
+    - sustainability_novelty_oriented
+
+simulation:
+  simulator: synthetic_random_utility
+  n_personas: 40
+  n_human_personas: 80
+  n_obs: 100
+  n_anchor_obs: 80
+  n_calib_obs: 80
+  n_cf_obs: 80
+  choice_temperature: 1.0
+
+synthetic_truth:
+  # Ground-truth population used to generate the synthetic human anchor D_H.
+  # It is intentionally close to, but not identical to, the initial generator.
+  weights: [0.45, 0.35, 0.20]
+  means:
+    - [-2.4, 0.8, 0.1, 0.0, -0.1]
+    - [-0.5, 2.0, 0.2, 0.0, 1.1]
+    - [-0.9, 0.7, 1.8, 1.3, 0.1]
+  within_component_std: 0.25
+
+inner_model:
+  model: mnl
+  l2: 1.0e-4
+  max_iter: 300
+
+calibration:
+  # Avoid literal duplicate moments under uniform diagonal weighting.
+  drop_redundant_moments: true
+  intervention_share_response: full_substitution
+  moments:
+    - item_shares
+    - group_shares
+    - chosen_attributes
+    - intervention_response
+  weights: diagonal_uniform
+
+regularization:
+  entropy_weight: 0.05
+  dispersion_weight: 0.05
+  prior_weight: 0.0
+  dispersion_mode: band
+  dispersion_min: 1.50
+  dispersion_max: 3.00
+  # Radius used only by the diversity-only heuristic baseline.
+  diversity_radius: 2.5
+
+outer_optimizer:
+  method: evolutionary_search
+  # v0.8 smoke values: small enough for a laptop, not paper-result values.
+  budget: 4
+  population: 2
+  mean_mutation_scale: 0.30
+  weight_logit_mutation_scale: 0.25
+  mean_clip: 4.0
+  sigma_decay: 0.85
+  objective_metric: calibration_l2_plus_regularization
+  regularization_multiplier: 0.10
+
+local:
+  notes: "This is intentionally tiny. It is for local smoke testing, not paper results."

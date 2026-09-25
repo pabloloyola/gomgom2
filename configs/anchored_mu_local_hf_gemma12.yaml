@@ -1,0 +1,56 @@
+experiment:
+  name: anchored_mu_coordinate_search_local_hf_gemma12_preheldout
+  controlled_seed: 1729
+  context_variants_per_intervention: 5
+  max_accepted_iterations: 4
+  coordinate_step: 0.5
+  selection_rule: greedy_best_single_coordinate_neighbor
+  accept_only_strict_improvement: true
+
+backend:
+  kind: huggingface_local
+  model: google/gemma-3-12b-it
+  dtype: bfloat16
+  device_map: auto
+  max_new_tokens: 192
+  do_sample: false
+  temperature: null
+  cache_dir: .cache/eipg/hf_local_gemma12
+  trust_remote_code: false
+
+transfer_gate:
+  fixed_pairs: true
+  repeats_per_pair: 3
+  min_parse_success: 0.98
+  min_repeat_consistency: 0.85
+  min_directional_accuracy: 0.75
+  proceed_to_calibration_only_if_passed: true
+
+mu:
+  features:
+    - price
+    - quality
+    - sustain
+    - novelty
+    - brand
+  lower_bound: -1.5
+  upper_bound: 1.5
+  baseline: exact_original_persona_prompts
+  renderer: anchored_relative_adjustments_v1
+  search: exhaustive_single_coordinate_plus_minus_step
+  step: 0.5
+
+protocol:
+  heldout_constructed: false
+  heldout_metrics_visible_for_selection: false
+  calibration_only_before_holdout_freeze: true
+  same_choice_contexts_as_prompt_refinement_v3: true
+  same_target_moments_as_prompt_refinement_v3: true
+  zero_mu_equals_original_prompt_exactly: true
+
+logging:
+  save_raw_responses: true
+  save_prompt_hashes: true
+  save_mu_history: true
+  save_latency: true
+  save_progress_jsonl: true
